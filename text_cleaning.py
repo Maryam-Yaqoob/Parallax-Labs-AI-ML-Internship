@@ -1,182 +1,323 @@
 """
-text_cleaning.py
------------------
-Stage 3: Robust text cleaning functions for the 20 Newsgroups dataset.
+test_text_cleaning.py
+----------------------
+Stage 4: Unit tests for text_cleaning.py
 
-Each function does ONE job and is independently testable (see
-test_text_cleaning.py). clean_text() composes them into a single pipeline.
-
-Design decisions (flagged explicitly, not assumed silently):
-  - Functions never raise on None / empty / non-string input — they return
-    a safe empty string instead, since a crash on one bad row would kill
-    a run over 18,000+ documents.
-  - Case and punctuation are NOT stripped/lowercased by default, because
-    this dataset is being prepared for embeddings later, and embedding
-    models generally perform better on natural casing/punctuation than on
-    aggressively normalized text. If a downstream task needs lowercasing,
-    it can be added as an explicit extra step — flagging this assumption
-    rather than silently lowercasing everything.
+Run:
+    pytest test_text_cleaning.py -v
 """
 
-import re
-import ftfy
-import emoji
-from langdetect import detect, LangDetectException
+import pytest
+from text_cleaning import (
+    is_valid_text,
+    fix_encoding,
+    remove_newsgroup_headers,
+    remove_quoted_lines,
+    remove_signature,
+    remove_html_tags,
+    remove_urls,
+    remove_email_addresses,
+    remove_emoji,
+    normalize_whitespace,
+    detect_language,
+    clean_text,
+)
 
 
 # ---------------------------------------------------------------------------
-# Individual cleaning functions
+# is_valid_text
 # ---------------------------------------------------------------------------
 
-def is_valid_text(text) -> bool:
-    """Returns False for None, non-strings, or empty/whitespace-only text."""
-    if text is None:
-        return False
-    if not isinstance(text, str):
-        return False
-    if text.strip() == "":
-        return False
-    return True
+def test_is_valid_text_none():
+    assert is_valid_text(None) is False
 
 
-def fix_encoding(text: str) -> str:
-    """Fixes mojibake / broken encoding artifacts (e.g. â€™ -> ’) using ftfy."""
-    if not is_valid_text(text):
-        return ""
-    return ftfy.fix_text(text)
+def test_is_valid_text_empty_string():
+    assert is_valid_text("") is False
 
 
-def remove_newsgroup_headers(text: str) -> str:
-    """
-    Strips the email-style header block that 20 Newsgroups posts start with
-    (From:, Subject:, Organization:, Lines:, NNTP-Posting-Host:, etc.).
-    Headers are a contiguous block of "Key: value" lines at the top of the
-    post, ending at the first blank line or first non-header line.
-    """
-    if not is_valid_text(text):
-        return ""
-
-    lines = text.split("\n")
-    header_pattern = re.compile(r"^[A-Za-z\-]+:\s?.*$")
-    body_start = 0
-
-    for i, line in enumerate(lines):
-        if header_pattern.match(line.strip()) or line.strip() == "":
-            body_start = i + 1
-        else:
-            break
-
-    return "\n".join(lines[body_start:])
+def test_is_valid_text_whitespace_only():
+    assert is_valid_text("   \n\t  ") is False
 
 
-def remove_quoted_lines(text: str) -> str:
-    """Removes quoted-reply lines (lines starting with '>', common in Usenet posts)."""
-    if not is_valid_text(text):
-        return ""
-
-    lines = text.split("\n")
-    kept = [line for line in lines if not line.strip().startswith(">")]
-    return "\n".join(kept)
+def test_is_valid_text_non_string_input():
+    assert is_valid_text(12345) is False
+    assert is_valid_text(["not", "a", "string"]) is False
 
 
-def remove_signature(text: str) -> str:
-    """
-    Removes trailing signature blocks. Usenet convention: a line containing
-    exactly '--' (optionally with trailing space) marks the start of a
-    signature, and everything after it is dropped.
-    """
-    if not is_valid_text(text):
-        return ""
-
-    lines = text.split("\n")
-    for i, line in enumerate(lines):
-        if line.strip() == "--":
-            return "\n".join(lines[:i])
-    return text
-
-
-def remove_html_tags(text: str) -> str:
-    """Strips HTML/XML-style tags, e.g. <b>bold</b> -> bold."""
-    if not is_valid_text(text):
-        return ""
-    return re.sub(r"<[^>]+>", " ", text)
-
-
-def remove_urls(text: str) -> str:
-    """Removes http(s) URLs and bare www.* links."""
-    if not is_valid_text(text):
-        return ""
-    url_pattern = re.compile(r"(https?://\S+|www\.\S+)")
-    return url_pattern.sub(" ", text)
-
-
-def remove_email_addresses(text: str) -> str:
-    """Removes email addresses, e.g. someone@example.com."""
-    if not is_valid_text(text):
-        return ""
-    email_pattern = re.compile(r"\S+@\S+\.\S+")
-    return email_pattern.sub(" ", text)
-
-
-def remove_emoji(text: str) -> str:
-    """Removes emoji characters, keeping surrounding text intact."""
-    if not is_valid_text(text):
-        return ""
-    return emoji.replace_emoji(text, replace=" ")
-
-
-def normalize_whitespace(text: str) -> str:
-    """Collapses repeated whitespace/newlines into single spaces and trims ends."""
-    if not is_valid_text(text):
-        return ""
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def detect_language(text: str) -> str:
-    """
-    Detects the dominant language of a text. Returns 'unknown' for empty
-    text or text too short/ambiguous for langdetect to classify reliably
-    (it raises LangDetectException in those cases — caught here so a single
-    bad row never crashes a full-dataset run).
-    """
-    if not is_valid_text(text):
-        return "unknown"
-    try:
-        return detect(text)
-    except LangDetectException:
-        return "unknown"
+def test_is_valid_text_normal_string():
+    assert is_valid_text("hello world") is True
 
 
 # ---------------------------------------------------------------------------
-# Full pipeline
+# fix_encoding
 # ---------------------------------------------------------------------------
 
-def clean_text(text: str) -> str:
-    """
-    Runs the full cleaning pipeline in order:
-      1. Fix encoding artifacts
-      2. Remove newsgroup headers
-      3. Remove quoted-reply lines
-      4. Remove signature block
-      5. Remove HTML tags
-      6. Remove URLs
-      7. Remove email addresses
-      8. Remove emoji
-      9. Normalize whitespace
+def test_fix_encoding_none_returns_empty():
+    assert fix_encoding(None) == ""
 
-    Returns "" for any input that is None, non-string, or empty/whitespace-only.
-    """
-    if not is_valid_text(text):
-        return ""
 
-    cleaned = fix_encoding(text)
-    cleaned = remove_newsgroup_headers(cleaned)
-    cleaned = remove_quoted_lines(cleaned)
-    cleaned = remove_signature(cleaned)
-    cleaned = remove_html_tags(cleaned)
-    cleaned = remove_urls(cleaned)
-    cleaned = remove_email_addresses(cleaned)
-    cleaned = remove_emoji(cleaned)
-    cleaned = normalize_whitespace(cleaned)
+def test_fix_encoding_empty_returns_empty():
+    assert fix_encoding("") == ""
 
-    return cleaned
+
+def test_fix_encoding_fixes_mojibake():
+    broken = "This textâ€™s got mojibake"
+    fixed = fix_encoding(broken)
+    assert "â€™" not in fixed
+
+
+def test_fix_encoding_leaves_clean_text_unchanged():
+    clean = "This is already clean text."
+    assert fix_encoding(clean) == clean
+
+
+# ---------------------------------------------------------------------------
+# remove_newsgroup_headers
+# ---------------------------------------------------------------------------
+
+def test_remove_newsgroup_headers_strips_header_block():
+    text = "From: a@b.com\nSubject: Test\nLines: 3\n\nActual message body here."
+    result = remove_newsgroup_headers(text)
+    assert "From:" not in result
+    assert "Subject:" not in result
+    assert "Actual message body here." in result
+
+
+def test_remove_newsgroup_headers_none_returns_empty():
+    assert remove_newsgroup_headers(None) == ""
+
+
+def test_remove_newsgroup_headers_no_headers_present():
+    text = "Just a plain message with no headers at all."
+    assert remove_newsgroup_headers(text) == text
+
+
+# ---------------------------------------------------------------------------
+# remove_quoted_lines
+# ---------------------------------------------------------------------------
+
+def test_remove_quoted_lines_removes_quotes():
+    text = "Normal line.\n> This is quoted.\nAnother normal line."
+    result = remove_quoted_lines(text)
+    assert "> This is quoted." not in result
+    assert "Normal line." in result
+    assert "Another normal line." in result
+
+
+def test_remove_quoted_lines_none_returns_empty():
+    assert remove_quoted_lines(None) == ""
+
+
+def test_remove_quoted_lines_no_quotes_present():
+    text = "No quoted lines here."
+    assert remove_quoted_lines(text) == text
+
+
+# ---------------------------------------------------------------------------
+# remove_signature
+# ---------------------------------------------------------------------------
+
+def test_remove_signature_strips_after_dash_dash():
+    text = "Main message.\n--\nJohn Doe\njohn@example.com"
+    result = remove_signature(text)
+    assert "Main message." in result
+    assert "John Doe" not in result
+
+
+def test_remove_signature_none_returns_empty():
+    assert remove_signature(None) == ""
+
+
+def test_remove_signature_no_signature_present():
+    text = "Just a message, no signature marker."
+    assert remove_signature(text) == text
+
+
+# ---------------------------------------------------------------------------
+# remove_html_tags
+# ---------------------------------------------------------------------------
+
+def test_remove_html_tags_strips_tags():
+    text = "This is <b>bold</b> and <i>italic</i>."
+    result = remove_html_tags(text)
+    assert "<b>" not in result
+    assert "<i>" not in result
+    assert "bold" in result
+    assert "italic" in result
+
+
+def test_remove_html_tags_none_returns_empty():
+    assert remove_html_tags(None) == ""
+
+
+# ---------------------------------------------------------------------------
+# remove_urls
+# ---------------------------------------------------------------------------
+
+def test_remove_urls_removes_http_links():
+    text = "Check this out: https://example.com/page and http://another.com"
+    result = remove_urls(text)
+    assert "https://" not in result
+    assert "http://" not in result
+    assert "Check this out:" in result
+
+
+def test_remove_urls_none_returns_empty():
+    assert remove_urls(None) == ""
+
+
+# ---------------------------------------------------------------------------
+# remove_email_addresses
+# ---------------------------------------------------------------------------
+
+def test_remove_email_addresses_removes_emails():
+    text = "Contact me at someone@example.com for details."
+    result = remove_email_addresses(text)
+    assert "someone@example.com" not in result
+    assert "Contact me at" in result
+
+
+def test_remove_email_addresses_none_returns_empty():
+    assert remove_email_addresses(None) == ""
+
+
+# ---------------------------------------------------------------------------
+# remove_emoji
+# ---------------------------------------------------------------------------
+
+def test_remove_emoji_removes_emoji_keeps_text():
+    text = "Great card 😀 highly recommend! 👍"
+    result = remove_emoji(text)
+    assert "😀" not in result
+    assert "👍" not in result
+    assert "Great card" in result
+    assert "highly recommend!" in result
+
+
+def test_remove_emoji_none_returns_empty():
+    assert remove_emoji(None) == ""
+
+
+def test_remove_emoji_no_emoji_present():
+    text = "No emoji here at all."
+    assert remove_emoji(text) == text
+
+
+# ---------------------------------------------------------------------------
+# normalize_whitespace
+# ---------------------------------------------------------------------------
+
+def test_normalize_whitespace_collapses_spaces():
+    text = "Too    many     spaces"
+    assert normalize_whitespace(text) == "Too many spaces"
+
+
+def test_normalize_whitespace_collapses_newlines():
+    text = "Line one\n\n\n\nLine two"
+    assert normalize_whitespace(text) == "Line one Line two"
+
+
+def test_normalize_whitespace_trims_ends():
+    text = "   leading and trailing spaces   "
+    assert normalize_whitespace(text) == "leading and trailing spaces"
+
+
+def test_normalize_whitespace_none_returns_empty():
+    assert normalize_whitespace(None) == ""
+
+
+# ---------------------------------------------------------------------------
+# detect_language
+# ---------------------------------------------------------------------------
+
+def test_detect_language_english():
+    text = "This is a normal English sentence about computer hardware and software."
+    assert detect_language(text) == "en"
+
+
+def test_detect_language_empty_returns_unknown():
+    assert detect_language("") == "unknown"
+
+
+def test_detect_language_none_returns_unknown():
+    assert detect_language(None) == "unknown"
+
+
+def test_detect_language_never_raises_on_short_ambiguous_text():
+    # langdetect can raise LangDetectException internally on very short/
+    # ambiguous text (e.g. a single punctuation character) — this must be
+    # caught and turned into "unknown", never propagate as a crash.
+    result = detect_language("...")
+    assert isinstance(result, str)
+
+
+# ---------------------------------------------------------------------------
+# clean_text (full pipeline)
+# ---------------------------------------------------------------------------
+
+def test_clean_text_none_returns_empty():
+    assert clean_text(None) == ""
+
+
+def test_clean_text_empty_returns_empty():
+    assert clean_text("") == ""
+
+
+def test_clean_text_whitespace_only_returns_empty():
+    assert clean_text("   \n\t  ") == ""
+
+
+def test_clean_text_non_string_returns_empty():
+    assert clean_text(12345) == ""
+    assert clean_text(["list", "not", "text"]) == ""
+
+
+def test_clean_text_full_pipeline_on_realistic_messy_post():
+    sample = (
+        "From: someone@example.com\n"
+        "Subject: Re: Best graphics card?\n"
+        "Organization: Some University\n"
+        "Lines: 15\n\n"
+        "In article <12345@example.com>, another@example.com wrote:\n"
+        "> I think the XYZ card is the best for gaming.\n"
+        "> Check this out: http://example.com/review\n\n"
+        "That's mostly true, but see <b>this link</b> too: https://another.com/page\n"
+        "This card is great for the price 😀 <br> highly recommend!\n\n"
+        "--\n"
+        "John Doe\n"
+        "someone@example.com\n"
+    )
+    result = clean_text(sample)
+
+    # Headers, quotes, signature, HTML, URLs, emails, emoji should all be gone
+    assert "From:" not in result
+    assert "Subject:" not in result
+    assert "> I think" not in result
+    assert "John Doe" not in result
+    assert "<b>" not in result
+    assert "http://" not in result
+    assert "https://" not in result
+    assert "someone@example.com" not in result
+    assert "😀" not in result
+
+    # The actual message content should survive
+    assert "mostly true" in result
+    assert "highly recommend" in result
+
+
+def test_clean_text_mixed_language_content_is_preserved():
+    # Cleaning should not strip non-English text — only noise.
+    text = "Ye card sach mein bohot acha hai for the price."
+    result = clean_text(text)
+    assert "sach mein" in result
+    assert "acha hai" in result
+
+
+def test_clean_text_is_idempotent_on_already_clean_text():
+    # Running clean_text on already-clean text should not corrupt it further
+    # (aside from whitespace normalization, which is safe to reapply).
+    text = "This is already a clean, simple sentence."
+    once = clean_text(text)
+    twice = clean_text(once)
+    assert once == twice

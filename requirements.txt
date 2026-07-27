@@ -1,0 +1,18 @@
+# Core data handling
+pandas>=2.2.0
+numpy>=1.26.0
+scikit-learn>=1.4.0        # ships the 20 Newsgroups dataset loader
+
+# Text cleaning & language handling
+nltk>=3.8.1                # tokenization, stopwords
+langdetect>=1.0.9          # detect mixed-language text
+ftfy>=6.2.0                # fixes mojibake / encoding issues
+chardet>=5.2.0             # detect raw byte encoding before decoding
+emoji>=2.11.0               # detect/strip emojis safely
+
+# Testing & reporting
+pytest>=8.0.0
+tqdm>=4.66.0                # progress bars for large-dataset loops
+
+# Future stage readiness (chunking/embedding) — not used yet in this stage
+tiktoken>=0.7.0             # token-aware chunking (Stage 5+)

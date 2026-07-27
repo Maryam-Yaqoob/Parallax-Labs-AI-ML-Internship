@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (raw dataset can be large / re-downloadable — keep repo light)
+data/raw/*
+!data/raw/.gitkeep
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# NLTK downloaded data (re-downloaded by verify_setup.py on first run)
+nltk_data/

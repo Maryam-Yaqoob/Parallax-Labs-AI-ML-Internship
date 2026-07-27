@@ -8,9 +8,9 @@ venv/
 # Jupyter
 .ipynb_checkpoints/
 
-# Data (raw dataset can be large / re-downloadable — keep repo light)
-data/raw/*
-!data/raw/.gitkeep
+# Generated dataset files (large, regeneratable by running the scripts)
+data_raw.csv
+processed_dataset.csv
 
 # OS/editor
 .DS_Store

@@ -23,10 +23,14 @@ not recreated per task).
   headers/footers/quotes intentionally kept as real-world noise) and validates it:
   null checks, empty/whitespace checks, duplicate checks, encoding checks, and
   document-length distribution. Outputs `data_raw.csv` and `data_validation_summary.md`.
+- `text_cleaning.py` — modular, independently-testable cleaning functions:
+  `fix_encoding`, `remove_newsgroup_headers`, `remove_quoted_lines`,
+  `remove_signature`, `remove_html_tags`, `remove_urls`, `remove_email_addresses`,
+  `remove_emoji`, `normalize_whitespace`, `detect_language`, and a composed
+  `clean_text()` pipeline. Every function returns `""` (or `"unknown"` for
+  language detection) instead of crashing on `None`/empty/whitespace-only input.
 
-**What's next (Stage 3):**
-- Write `text_cleaning.py` with robust cleaning functions (empty text,
-  mixed-language text, encoding artifacts, HTML/quoted-reply noise)
+**What's next (Stage 4):**
 - Unit tests in `test_text_cleaning.py`
 - Data quality report in `data_quality_report.md`
 - Final clean dataset (`processed_dataset.csv`), ready for chunking/embedding in a later task
@@ -51,6 +55,12 @@ See [`requirements.txt`](requirements.txt). Key libraries:
 | pytest | Unit testing |
 | tqdm | Progress bars for large-loop operations |
 | tiktoken | Token-aware chunking (used in a later task, not this one) |
+
+**Design note (Stage 3):** `text_cleaning.py` does not lowercase or strip
+punctuation by default, since this dataset is being prepared for embeddings,
+and embedding models generally do better on natural casing/punctuation. This
+is flagged here rather than assumed silently — let me know if the internship
+task expects lowercasing and we'll add it as an explicit step.
 
 ---
 
@@ -84,7 +94,7 @@ Parallax-Labs-AI-ML-Internship/
 ├── load_and_validate_dataset.py
 ├── data_raw.csv                # generated when you run load_and_validate_dataset.py
 ├── data_validation_summary.md  # generated when you run load_and_validate_dataset.py
-├── text_cleaning.py           # added in Stage 3
+├── text_cleaning.py
 ├── test_text_cleaning.py      # added in Stage 4
 ├── data_quality_report.md     # added in Stage 4
 └── processed_dataset.csv      # added in Stage 4/5 (final clean output)

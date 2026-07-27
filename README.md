@@ -95,6 +95,7 @@ See [`requirements.txt`](requirements.txt). Key libraries:
 | tqdm | Progress bars for large-loop operations |
 | tiktoken | Token-aware chunking (used in a later task, not this one) |
 
+
 **Design note (Stage 3):** `text_cleaning.py` does not lowercase or strip
 punctuation by default, since this dataset is being prepared for embeddings,
 and embedding models generally do better on natural casing/punctuation. This
@@ -179,6 +180,13 @@ Parallax-Labs-AI-ML-Internship/
 ├── text_cleaning.py
 ├── test_text_cleaning.py
 ├── generate_clean_dataset.py
-├── data_quality_report.md      # generated when you run generate_clean_dataset.py
-└── processed_dataset.csv       # generated when you run generate_clean_dataset.py (final output)
+├── data_quality_report.md # generated when you run generate_clean_dataset.py
+├── processed_dataset.csv # generated when you run generate_clean_dataset.py (final output)
+├── chunking.py
+├── test_chunking.py
+├── embeddings.py
+├── chroma_ingest.py
+├── test_retrieval.py
+├── NOTES.md
+└── logs/ # generated: embedding_perf.csv, retrieval_perf.csv
 ```

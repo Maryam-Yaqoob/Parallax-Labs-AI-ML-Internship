@@ -29,11 +29,18 @@ not recreated per task).
   `remove_emoji`, `normalize_whitespace`, `detect_language`, and a composed
   `clean_text()` pipeline. Every function returns `""` (or `"unknown"` for
   language detection) instead of crashing on `None`/empty/whitespace-only input.
+- `test_text_cleaning.py` — 42 unit tests covering every function, including
+  edge cases (None, empty, whitespace-only, non-string input, mixed-language
+  text, idempotency). All 42 passing.
+- `generate_clean_dataset.py` — applies the full cleaning pipeline + language
+  detection to every document in `data_raw.csv`, and outputs:
+  - `processed_dataset.csv` — final clean dataset, ready for chunking/embedding
+  - `data_quality_report.md` — before/after quality report (length reduction,
+    docs that became empty after cleaning, language distribution, post-clean
+    duplicates)
 
-**What's next (Stage 4):**
-- Unit tests in `test_text_cleaning.py`
-- Data quality report in `data_quality_report.md`
-- Final clean dataset (`processed_dataset.csv`), ready for chunking/embedding in a later task
+**Task 1 status: complete.** All 4 stages done — environment, dataset
+acquisition/validation, cleaning functions, unit tests + final clean dataset.
 
 **Note:** repo uses a flat file structure (no subfolders) for simplicity.
 
@@ -73,6 +80,15 @@ pip install -r requirements.txt
 
 # Verify every library imports and works correctly:
 python verify_setup.py
+
+# Acquire and validate the raw dataset:
+python load_and_validate_dataset.py
+
+# Run the unit tests for the cleaning functions:
+pytest test_text_cleaning.py -v
+
+# Generate the final cleaned dataset + quality report:
+python generate_clean_dataset.py
 ```
 
 Expected output: `Result: 11/11 checks passed` (a `[WARN]` on `tiktoken` is fine if
@@ -95,7 +111,8 @@ Parallax-Labs-AI-ML-Internship/
 ├── data_raw.csv                # generated when you run load_and_validate_dataset.py
 ├── data_validation_summary.md  # generated when you run load_and_validate_dataset.py
 ├── text_cleaning.py
-├── test_text_cleaning.py      # added in Stage 4
-├── data_quality_report.md     # added in Stage 4
-└── processed_dataset.csv      # added in Stage 4/5 (final clean output)
+├── test_text_cleaning.py
+├── generate_clean_dataset.py
+├── data_quality_report.md      # generated when you run generate_clean_dataset.py
+└── processed_dataset.csv       # generated when you run generate_clean_dataset.py (final output)
 ```

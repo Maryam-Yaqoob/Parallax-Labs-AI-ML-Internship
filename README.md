@@ -44,6 +44,38 @@ acquisition/validation, cleaning functions, unit tests + final clean dataset.
 
 **Note:** repo uses a flat file structure (no subfolders) for simplicity.
 
+### Task 2 — Chunking, Embeddings & Vector DB
+
+**Status: complete.**
+
+**What's done:**
+
+- `chunking.py` — recursive character text splitting (custom implementation,
+  same approach as LangChain's `RecursiveCharacterTextSplitter`), chunk
+  size 1000 / overlap 100. Produces 35,072 chunks from `processed_dataset.csv`.
+- `test_chunking.py` — unit tests covering edge cases (None/empty input,
+  overlap >= chunk size, paragraph-boundary splitting, hard character-split
+  fallback, unique chunk IDs).
+- `embeddings.py` — generates embeddings with `sentence-transformers`
+  (`all-MiniLM-L6-v2`, 384-dim) and logs timing to `logs/embedding_perf.csv`.
+- `chroma_ingest.py` — sets up a ChromaDB collection and ingests all
+  chunks + embeddings.
+- `test_retrieval.py` — runs domain-relevant semantic search queries
+  against the collection and logs latency to `logs/retrieval_perf.csv`.
+
+See [`NOTES.md`](./NOTES.md) for chunking strategy details, real embedding/
+retrieval performance numbers, example query results, and known data
+quality limitations.
+
+**Running Task 2** (after Task 1's `processed_dataset.csv` exists):
+
+\```
+python chunking.py
+python embeddings.py
+python chroma_ingest.py
+python test_retrieval.py
+\```
+
 ---
 
 ## Dependencies

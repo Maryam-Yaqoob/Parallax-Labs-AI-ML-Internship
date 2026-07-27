@@ -77,23 +77,57 @@ task expects lowercasing and we'll add it as an explicit step.
 git clone https://github.com/Maryam-Yaqoob/Parallax-Labs-AI-ML-Internship.git
 cd Parallax-Labs-AI-ML-Internship
 pip install -r requirements.txt
-
-# Verify every library imports and works correctly:
-python verify_setup.py
-
-# Acquire and validate the raw dataset:
-python load_and_validate_dataset.py
-
-# Run the unit tests for the cleaning functions:
-pytest test_text_cleaning.py -v
-
-# Generate the final cleaned dataset + quality report:
-python generate_clean_dataset.py
 ```
 
+## Running the Pipeline
+
+Run these in order — each step depends on the file(s) produced by the one before it.
+
+**1. Verify the environment**
+```bash
+python verify_setup.py
+```
 Expected output: `Result: 11/11 checks passed` (a `[WARN]` on `tiktoken` is fine if
 your network blocks its one-time encoding file download — it does not affect this
 task, which doesn't use tiktoken yet).
+
+**2. Acquire and validate the raw dataset**
+```bash
+python load_and_validate_dataset.py
+```
+Downloads 20 Newsgroups (~18,846 docs), then writes `data_raw.csv` and
+`data_validation_summary.md`. Expected: `Total documents: 18846`, with
+`Null entries`, `Duplicate documents`, and `Encoding issues` all at `0`.
+
+**3. Run the unit tests for the cleaning functions**
+```bash
+python -m pytest test_text_cleaning.py -v
+```
+Expected: `42 passed`.
+
+> **Important — use `python -m pytest`, not a bare `pytest` command.**
+> On some setups, notably Windows/PowerShell, pip installs `pytest.exe` into a
+> `Scripts` folder that isn't on `PATH`, so a bare `pytest` command fails with
+> `pytest : The term 'pytest' is not recognized as the name of a cmdlet...`
+> even though pytest is installed correctly. `python -m pytest` always works
+> since it just asks the already-on-`PATH` `python` interpreter to run pytest
+> as a module. **Evaluators should use `python -m pytest test_text_cleaning.py -v`
+> to run the tests correctly.**
+
+**4. Generate the final cleaned dataset + quality report**
+```bash
+python generate_clean_dataset.py
+```
+Requires `data_raw.csv` from step 2. Outputs `processed_dataset.csv` and
+`data_quality_report.md`. Expected: `DONE — Stage 4 complete`.
+
+**All steps in one block** (for copy-paste convenience):
+```bash
+python verify_setup.py
+python load_and_validate_dataset.py
+python -m pytest test_text_cleaning.py -v
+python generate_clean_dataset.py
+```
 
 ---
 

@@ -19,10 +19,12 @@ not recreated per task).
 - `verify_setup.py` — verification script that imports every dependency **and**
   runs a small functional check for each (not just `import x`), so a broken install
   is caught immediately instead of failing later mid-pipeline
+- `load_and_validate_dataset.py` — acquires the 20 Newsgroups dataset (~18,846 docs,
+  headers/footers/quotes intentionally kept as real-world noise) and validates it:
+  null checks, empty/whitespace checks, duplicate checks, encoding checks, and
+  document-length distribution. Outputs `data_raw.csv` and `data_validation_summary.md`.
 
-**What's next (Stage 2):**
-- Acquire the dataset (20 Newsgroups, ~18,800 real-world documents)
-- Validate it: null checks, encoding checks, duplicate checks
+**What's next (Stage 3):**
 - Write `text_cleaning.py` with robust cleaning functions (empty text,
   mixed-language text, encoding artifacts, HTML/quoted-reply noise)
 - Unit tests in `test_text_cleaning.py`
@@ -79,6 +81,9 @@ Parallax-Labs-AI-ML-Internship/
 ├── requirements.txt
 ├── .gitignore
 ├── verify_setup.py
+├── load_and_validate_dataset.py
+├── data_raw.csv                # generated when you run load_and_validate_dataset.py
+├── data_validation_summary.md  # generated when you run load_and_validate_dataset.py
 ├── text_cleaning.py           # added in Stage 3
 ├── test_text_cleaning.py      # added in Stage 4
 ├── data_quality_report.md     # added in Stage 4

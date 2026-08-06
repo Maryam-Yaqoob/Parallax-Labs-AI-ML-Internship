@@ -1,0 +1,5 @@
+# --- Add these lines to the existing requirements.txt for Task 3 (RAG generation) ---
+# Everything else (pandas, scikit-learn, pytest, tiktoken) is already listed there.
+
+requests>=2.31.0        # OpenRouter API calls
+python-dotenv>=1.0.1    # loads OPENROUTER_API_KEY from a local .env file
